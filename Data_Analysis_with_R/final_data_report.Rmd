@@ -1,0 +1,348 @@
+---
+title: "Data analysis report"
+author: "Hyunjung Byun,Yuqi fu"
+date: "8/20/2018"
+output:
+     pdf_document:
+       latex_engine: xelatex
+       toc: yes
+---
+
+Data description: 
+=============
+
+
+Data source
+
+insurance.csv
+https://www.kaggle.com
+We use multi plot function  from W. Chang in the "R Graphics Cookbook" 
+
+
+the dataset shows individual health expense with factors.
+```{r}
+myda <- read.csv("~/desktop/insurance.csv",sep = ",",header = TRUE)
+str(myda)
+myda[,4] = as.factor(myda[,4])
+myda[,2] = as.factor(myda[,2])
+```
+The bmi is a kind of healthy index. There is a first view of dataset
+```{r}
+head(myda)
+```
+Moviation:
+=========
+
+
+Firstly, it is a common veiw that elder people will pay more on health expeniture. We want to test it and find some other factor which is sensitive to that relationship.
+
+
+Secondly, we wonder that if people have children, health expense increase? 
+and Will parents spend more on health charges if they have more children?
+
+
+Package used:
+```{r}
+library(ggplot2)
+library(plyr)
+library(dplyr)
+```
+Part1: Age and health charges.
+=========
+
+
+According to W,Chang in the "R Graphics Cookbook", a multiplot function can be created to plot several plots together. We use his nultiplot fucnction.
+
+
+```{r,echo = FALSE}
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+```
+The first step is to deal with missing value and outlier
+
+
+```{r}
+#missing value
+sum(is.na(myda))
+```
+```{r,fig.width=10, fig.height=5,echo = FALSE}
+#only in charges, outliers are found
+boxplot(myda$charges)
+```
+
+Fortunately, there is no missing value, but the outlier are quite a lot in charges. However, there is some patterns in ourliers.
+
+
+```{r,fig.width=10, fig.height=5,echo = FALSE}
+myda_outlier <- myda %>% 
+  mutate(outlier = ifelse((charges>mean(charges)+1.5*IQR(charges)),"true","fales"))
+ggplot(data = myda_outlier, mapping = aes(x = age, y = charges)) +
+  geom_point() + 
+  geom_point(data = dplyr::filter(myda_outlier,outlier == "true"), colour = "red", size = 1)+
+  ggtitle("Outlier")
+```
+It can be easily seen that data is seperated. Therefore, these outlier should not be removed, but find which factors cause them. The main purpose is to test whether there is a relationship between ages and health charges. To feature it out, the linear model should be built up and do hypothesis test about coefficient.
+
+
+```{r,echo = FALSE}
+singlelinear_model <- lm(charges~age,data = myda)
+summary(singlelinear_model)
+```
+Because coefficent t-value is far away from 0 and p-value is significantly low, it is reasonable to reject H0:age = 0 and we can say there is a  positive relationship between age and health charges. Therefore, we can conclude that the common view that elder people will pay more on health is true. However, R square(0.08872) is low and graph doesn't show a clear line. It means charges cannot be fully explained by age factor. We need to search on other factors which affect on age_charges model. 
+
+
+```{r,fig.width=10, fig.height=5,echo = FALSE}
+ggplot(data=myda,aes(x=age,y=charges))+
+    geom_smooth(method='lm')+
+    geom_point()
+```
+ Firstly, We test whether the factors (gender, smoking or not, number of children, and regions) influence on age_health charges model.
+ 
+ 
+```{r,fig.width=10, fig.height=5,echo = FALSE}
+df <- ToothGrowth
+plot1 <-ggplot(data=myda, aes(x=age, y=charges, group=sex,color = sex)) + 
+    geom_smooth(method = 'loess')+
+    ggtitle("Gender")
+
+plot2 <-ggplot(data=myda, aes(x=age, y=charges, group=children,color = children)) + 
+    geom_smooth(method = 'loess')+
+    ggtitle("Number of Children")
+
+plot3 <-ggplot(data=myda, aes(x=age, y=charges, group=smoker,color = smoker)) + 
+    geom_smooth(method = 'loess')+
+  ggtitle("Smoking or not")
+
+plot4 <-ggplot(data=myda, aes(x=age, y=charges, group=region,color = region)) + 
+    geom_smooth(method = 'loess')+
+  ggtitle("Regions")
+
+multiplot(plot1,plot2,plot3,plot4, cols=2)
+```
+In the graphs, It seems that gender and smoking or not factors have impacts. Especially, there is a significant difference between smoker and non-smoker. Therefore, We focus on smoking factor. We sepeate the whole data into four pieces depending on whether a person is a smoker or not.
+
+
+```{r,fig.width=10, fig.height=5,echo = FALSE}
+smoker <- myda %>%
+  filter(smoker == "yes")
+non_smoker <- myda %>%
+  filter(smoker == "no")
+plot_smoker <-ggplot(data = smoker)+
+  geom_point(mapping = aes(x = age,y = charges),color = "red",size = 1,position = "jitter")+
+  ggtitle("smoker")
+plot_nonsmoker<-ggplot(data = non_smoker)+
+  geom_point(mapping = aes(x = age,y = charges),color = "green",size = 1,position = "jitter")+
+  ggtitle("non-smoker")
+cdat <- ddply(myda, "smoker", summarise, charges.mean=mean(charges))
+density_smoker<-ggplot(myda, aes(x=charges,colour = smoker)) + 
+  geom_density()+
+  geom_vline(data=cdat, aes(xintercept=charges.mean,  colour=smoker),
+               linetype="dashed", size=1)+
+  ggtitle("density plot")
+box_smoker<-ggplot(data = myda,mapping = aes(x = smoker,y = charges,fill = smoker))+
+   geom_boxplot()+
+   ggtitle("box plot")
+multiplot(plot_smoker,density_smoker,plot_nonsmoker,box_smoker,cols = 2)
+```
+
+It is clear that smokers and non-smokers pay defferently on health. For smokers, it seems like two clustered lines with high charges, but for nonsmokers, it has a clear line with some outliers. Also, the statistic infomtion shows there is a significant difference between smokers and non-smokers
+
+
+```{r,echo = FALSE}
+summary(smoker$charges)
+summary(non_smoker$charges)
+```
+
+They have a large difference between mean (32050 vs 8434) and median (34456 vs 7345). Also, according to linear models of smokers and non-smokers, smokers is much more sensitive to age_charges relationship. It means a smoker will probably pay much more when they become elder.(coefficience are 305 and 267 repectively)
+
+
+```{r,echo = FALSE}
+model_smoker <- lm(charges~age,data = smoker)
+summary(model_smoker)
+model_nonsmoker <- lm(charges~age,data = non_smoker)
+summary(model_nonsmoker)
+```
+We can conclude this part, however there is still some question to be deal with. Followig the smokers graph, it has two clear lines. Since we have only focused on regions and number of children factors, we will consider on bmi and gender factors.Therefore, we group people by gender and smoking or not and we want to see differences caused by bmi.
+```{r,echo = FALSE}
+male_smoker <- smoker %>%
+  filter(sex == "male")
+female_smoker <- smoker %>%
+  filter(sex == "female")
+male_nonsmoker <- non_smoker %>%
+  filter(sex == "male")
+female_nonsmoker <- non_smoker %>%
+  filter(sex == "female")
+```
+We judge bmi index "hige" and "low" if bmi is higer than the average of bmi, it is high and if bmi is lower than the average, we define it is low.
+
+
+```{r,fig.width=10, fig.height=5,echo = FALSE}
+male_smoker <- male_smoker%>%
+  mutate(bmi = ifelse((bmi>mean(bmi)),"high","low"))
+female_smoker <- female_smoker%>%
+  mutate(bmi = ifelse((bmi>mean(bmi)),"high","low"))
+male_nonsmoker <- male_nonsmoker%>%
+  mutate(bmi = ifelse((bmi>mean(bmi)),"high","low"))
+female_nonsmoker <- female_nonsmoker%>%
+  mutate(bmi = ifelse((bmi>mean(bmi)),"high","low"))
+df <- ToothGrowth
+ms <-ggplot(data=male_smoker, aes(x=age, y=charges, group=bmi,color = bmi)) + 
+    geom_smooth(method = 'loess')+
+    ggtitle("Male smokers")
+fs <- ggplot(data=female_smoker, aes(x=age, y=charges, group=bmi,color = bmi)) + 
+    geom_smooth(method = 'loess')+
+  ggtitle("Female smokers")
+mn <- ggplot(data=male_nonsmoker, aes(x=age, y=charges, group=bmi,color = bmi)) + 
+    geom_smooth(method = 'loess')+
+  ggtitle("Male nonsmokers")
+fn <- ggplot(data=female_nonsmoker, aes(x=age, y=charges, group=bmi,color = bmi)) + 
+    geom_smooth(method = 'loess')+
+  ggtitle("Female nonsmokers")
+multiplot(ms,fs,mn,fn, cols=2)
+```
+There is no significant differnce in male and female non-smokers. However, we can see a clear result in smokers. Bmi is sensitive to age_charges relationship for both male and female smokers. As we can see, smokers who are in high bmi pay high charges on health cost. but it is required to Hypothesis test whether bmi has no affect on non-smokers for a clear result.
+
+
+```{r,echo = FALSE}
+malenon_model <- lm(charges~age+bmi,data = male_nonsmoker)
+summary(malenon_model)
+femalenon_model <- lm(charges~age+bmi,data = female_nonsmoker)
+summary(femalenon_model)
+
+```
+Multi linear model should be created to test whether bmi can affect age_charges relationship. Because of high p value(0.8036 and 0.4402), it is fail to reject H0:bmi = 0. Therefore, bmi is not sensitive for non smokers.
+
+
+The general conclusion of first part:
+
+
+Age has a positive relationship with healthy charges. In this relationship, smoking is a sensitive  factor.It means smokers will probably pay high charges on health as they get older. 
+Also, there is another factor affect the relationship. It's bmi. As we prove above bmi has different effects on smokers and non-smokers. For smokers, high bmi probably mean a high coefficience in age_charges model. However, its impact on non_smokers is minimal.
+
+
+Second Part:
+=========
+
+
+Number of children.
+
+
+The first question is that if parents pay more compared to people who have no chilren. To identified parents, a new attribute is_parent is inserted.
+
+
+```{r,fig.width=10, fig.height=5,echo = FALSE}
+myda <- myda%>%
+  mutate(is_parent = ifelse((children ==0),"no","yes"))
+myda[,4] = as.factor(myda[,4])
+hist_parent<-ggplot(data = myda)+
+  geom_bar(mapping = aes(x = is_parent,fill = is_parent))+
+  ggtitle("Count")
+box_parent<-ggplot(data = myda,mapping = aes(x = is_parent,y = charges,fill = is_parent))+
+   geom_boxplot()+
+   ggtitle("box plot")
+multiplot(hist_parent,box_parent,cols = 2)
+```
+According to Count plot, parents and non_parents has similar number and both of them is not in small size, so we can continue to do analysis. The boxplot shows parents and non_parents has similar median, but parents charge more than non-parents. That should be analyzed in detail.
+
+
+```{r,echo = FALSE}
+parent_linear <- lm(charges~is_parent,data = myda)
+summary(parent_linear)
+```
+According to the summary, it is reasonable to reject H0:is_parent = 0. Therefore, it can be concluded parents will probably pay more health charges. Moverover, if we see Is_parents figure, parents between age 35 and 43 will probably pay equal amount on health charges with non_parents. However, they will pay more before 35 and after 43.
+
+
+```{r,fig.width=10, fig.height=5,echo = FALSE}
+ggplot(data=myda, aes(x=age, y=charges, group=is_parent,color =is_parent)) + 
+    geom_smooth(method = 'loess')+
+  ggtitle("Is_parents")
+```
+Then, the second question of this part is to test whether parents will pay more when they have more children.
+
+
+```{r,fig.width=10, fig.height=5,echo = FALSE}
+children <- myda %>%
+  filter(is_parent == "yes")
+hist_children<-ggplot(data = children)+
+  geom_bar(mapping = aes(x = children,fill = children))+
+  ggtitle("Count")
+box_children<-ggplot(data = children,mapping = aes(x = children,y = charges,fill = children))+
+   geom_boxplot()+
+   ggtitle("box plot")
+multiplot(hist_children,box_children,cols = 2)
+
+```
+According to Count plot, many parents just have 1,2 or 3 children. Just few of then have more than 3 children. Therefore, we can view children less than 4 as "common" and more than 3 as "unusual". Then, the difference between "common" and "unusual" can be test.
+
+
+```{r,echo = FALSE}
+children <- children %>%
+  mutate(common = ifelse((children %in% c(1,2,3)),"yes","no"))
+common_linear <- lm(charges~common,data = children)
+summary(common_linear)
+```
+As a result, it is fail to reject H0, so we have no enough confidence to say parents with many children will have higher healthy cost. Also, if we see the effect of children, the pattern is not clear.
+
+
+```{r,fig.width=10, fig.height=5,echo = FALSE}
+cdat2 <- ddply(children, "children", summarise, charges.mean=mean(charges))
+ggplot(children, aes(x=charges,colour = children)) + 
+  geom_density()+
+  geom_vline(data=cdat2,aes(xintercept=charges.mean,  colour=children),
+               linetype="dashed", size=1)
+```
+The general conclusion of Part2
+
+
+In sum up, parents generally will pay more on health cost when they are less than 35 and more than 43 years old. However, parents with many children shows little difference with who has few children. Also, the effect of number of children is not clear.
+
+
+Conclusion
+=========
+
+For fisrt part, We can say that people who are smoking and in high of bmi pay more on health as they get older. For age we cannot control, but quitting smoking and keeping body weight in balence could help reduce health cost.
+ For second part, we can conclude that how many children people have doesn't affect on health charges but people who have children age under 35 and above 43 pay more on health.
+
+
+Reference 
+========
+W,Chang(2012), R Graphics Cookbook Practical Recipes for Visualizing Data,Publisher: O'Reilly Media
+
+
+
+
+The dataset source:M,Choi(2018),Medical Cost Personal Dataset <div>https://www.kaggle.com/mirichoi0218/insurance</div>
+

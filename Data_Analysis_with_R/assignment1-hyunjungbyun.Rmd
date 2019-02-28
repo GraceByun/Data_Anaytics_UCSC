@@ -1,0 +1,120 @@
+---
+title: "assignment1"
+author: "Hyunjung Byun"
+date: "2018<eb>7<ec>13<ec>"
+output:
+html_document:
+df_print: paged
+---
+<br><br>
+<h3>QUESTION 1<br></h3>
+
+central tendency: 
+mode, median, mean
+<br>
+variation:
+range, qualtile deviation, variance, standard deviation
+<br><br>
+
+<h3>QUESTION 2<br></h3>
+first way: using <strong>c()</strong> function which combines vectors<br>
+second way : using <strong>seq()</strong> function which  generates a sequence of numbers<br>
+third way : using <strong>rep()</strong> function which rep() function replicates the vectors<br><br>
+
+
+<h3>QUESTION 3<br></h3>
+answer: character<br>
+```{r}
+x3<-c('x','x','x',1,3,5,7,9,2,4,6,8,10)
+class(x3)
+```
+<br><br>
+<h3>QUESTION 4<br></h3>
+
+```{r}
+x4<-seq(1,100,by=2)
+x4
+```
+
+<br><br>
+<h3>QUESTION 5<br></h3>
+```{r}
+x5<-x4[x4 <=60 | x4 >=80]
+x5
+```
+
+<br><br>
+<h3>QUESTION 6<br></h3>
+```{r}
+ff <- function(x){
+  mean = mean(x)
+  median = median(x)
+  sd = sd(x)
+  return(c(mean, median, sd))
+}
+ff(x5)
+```
+
+<br><br>
+<h3>QUESTION 7</br></h3>
+
+<strong>first method </strong>: numbers by column in 3ways<br>
+belows all have the same result<br>
+```{r}
+x1<-c(2,3,7,1,6,2,3,5,1)
+mat1<-matrix(x1,ncol=3) 
+#or
+mat1<-matrix(x1,3,3)
+#or
+mat1<- cbind(c(2,3,7),c(1,6,2),c(3,5,1))
+mat1
+```
+<strong>second method</strong>: numbers by row<br>
+```{r}
+x2<-c(3,2,9,0,7,8,5,8,2)
+mat2<-matrix(x2,ncol=3, byrow=TRUE)
+mat2
+```
+
+<br><br>
+<h3>QUESTION 8<br></h3>
+```{r}
+
+matriceproduct<-mat1 %*% mat2
+matriceproduct
+
+```
+<h3>QUESTION 9<br></h3>
+<strong>*Find the class of ‘iris’ dataframe<br></strong>
+```{r}
+data.frame(iris)
+```
+<br>
+<strong>*find the class of all the columns of ‘iris' get the summary</strong>
+```{r}
+lapply(iris, class) 
+#or
+sapply(iris, class)
+```
+<br>
+<strong>*Get rownames, get column names</strong>
+```{r}
+rownames(iris)
+colnames(iris)
+```
+<br>
+<strong>*Get the number of rows and number of columns.</strong><br>
+answer: rows-> 150, columns -> 5
+```{r}
+str(iris)
+#or
+nrow(iris)
+ncol(iris)
+```
+<br><br>
+
+<h3>QUESTION 10</h3>
+```{r}
+x10<-iris[(nrow(iris)-1):nrow(iris),(ncol(iris)-1):ncol(iris)]
+x10
+```

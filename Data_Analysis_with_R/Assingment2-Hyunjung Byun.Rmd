@@ -1,0 +1,149 @@
+---
+title: "Assignment2"
+author: "Hyunjung Byun"
+output:
+  html_document:
+    df_print: paged
+---
+
+<h3>Question1</h3>
+
+```{r}
+getoutliers <- function(i) {
+  first = quantile(i, 0.25)
+  x = first - 1.5*IQR(i)
+  third = quantile(i,0.75)
+  y = third + 1.5*IQR(i)
+  outliers <- i[which(i<x| i>y)]
+  return(c(first, third, outliers))
+}
+
+# You can see the results through an example
+x <- c(3,4,5,9,100)
+getoutliers(x)
+
+```
+
+
+<h3>Question2-a</h3>
+```{r}
+x<-c(1, 2, 5, 10, 12)
+y<-c(2, 5, 1, 0, 12)
+
+
+#There are two ways
+
+#first way
+x[x %in% y]
+
+#second way
+intersect(x, y)
+
+```
+
+
+<h3>Question2-b</h3>
+```{r}
+
+#Find	values	that	are	in	x	but	not	in	y
+x[!(x %in% y)]
+
+#Find	values	that	are	in	y	but	not	in	x
+y[!(y %in% x)]
+
+```
+
+
+<h3>Question2-c</h3>
+```{r}
+unique(c(x,y)) #duplicated elements are removed.
+c(x, y)        #duplicated elements are not removed.
+
+```
+
+
+<h3>Question3</h3>
+```{r}
+data(USArrests)
+
+#calurate max and min of USArrests.
+max(USArrests$Murder)
+max(USArrests$Assault)
+max(USArrests$Rape)
+
+min(USArrests$Murder)
+min(USArrests$Assault)
+min(USArrests$Rape)
+
+#or simple way of using apply function
+apply(USArrests,2,max) # max
+apply(USArrests,2,min) # min
+
+```
+
+
+```{r}
+#find out the cities.
+
+# The Most Murder Arrests is in Georgia
+USArrests[which(USArrests$Murder==17.4), ][1] 
+
+# The Most Assault Arrests is in North Carolina 
+USArrests[which(USArrests$Assault==337), ][2] 
+
+# THe Most Rape Arrests is in Nevada
+USArrests[which(USArrests$Rape==46), ][4] 
+
+# The Least Murder Arrests is in North Dakota  
+USArrests[which(USArrests$Murder==0.8), ][1] 
+
+# The Least Assault Arrests is in North Dakota
+USArrests[which(USArrests$Assault==45), ][2]
+
+# The Least Rape Arrests is in North Dakota
+USArrests[which(USArrests$Rape==7.3), ][4]    
+```
+
+
+<h3>Question4</h3>
+```{r}
+summary(USArrests$Murder)
+
+# In Summary top 25% in Murder is 11.250
+# So you can get the top 25% which is same or more than 11.25
+USArrests[which(USArrests$Murder >= 11.25), ][1]
+
+# In Summary botom 25%  in Murder is 4.075
+# So you can get the bottom 25% which is same or less than 4.075
+USArrests[which(USArrests$Murder <= 4.075), ][1]
+
+```
+
+
+
+<h3>Question5-a</h3>
+```{r}
+FnA <- function(x = rnorm(30)){
+  SdA = sd(x)
+  return(sd = SdA)
+}
+#You can see the results through an example
+i<-c(1,2,3,4,5)
+FnA(i)
+```
+
+
+<h3>Question5-b</h3>
+```{r}
+FnB<-function(x = rnorm(30)){
+  meanB<-mean(x, na.rm = TRUE)
+  sdB<-sd(x, na.rm = TRUE)
+  return(c(mean = meanB, sd = sdB))
+}
+#You can see the results through an example
+i<-c(2,2,4,NA)
+FnB(i)
+```
+
+
+

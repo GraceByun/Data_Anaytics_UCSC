@@ -1,0 +1,145 @@
+---
+title: "Assignment4"
+author: "Hyunjung Byun"
+---
+---
+title: "Assignment4"
+author: "Hyunjung Byun"
+
+---
+
+#Load	 worldrecord.csv	 and	 answer	 the	following?
+```{r}
+library(dplyr)
+WorldRecords = read.csv("c:/users/byunh/WorldRecords.csv", header = TRUE, sep = ',')
+WorldRecords
+```
+
+#1. How	 many	 different	 types	 of	 events	 (e.g.	
+#“Mens	 100m”,	 “Womens	 shotput”	 etc)	 are	represented	in	the	dataset
+```{r}
+length(unique(WorldRecords$Event))
+```
+
+# 2. In what year did Usain Bolt first break the world record for the men's 100m?
+```{r}
+A<-WorldRecords[WorldRecords$Athlete == 'Usain Bolt' ,]
+A[1,]$Year
+```
+
+#3. Which	variable	tells	us	the	record	setting	time	or	distance?
+# type
+```{r}
+str(WorldRecords)
+unique(WorldRecords$Type)
+print("Type")
+```
+
+#The	variable	name	in	the	data	set	is?	
+```{r}
+str(WorldRecords)
+print("Type")
+```
+
+#What	type	of	the	variable	is	this?
+```{r}
+class(WorldRecords$Type)
+```
+
+#4. Create	 a	 subset	 of	 the	 dataset	 that	 contains	
+#only	the	world	record	cases	for	men’s	shotput	and	women’s	shotput
+```{r}
+Shotput<-subset(WorldRecords, Event %in% c('Mens Shotput','Womens Shotput'))
+Shotput
+```
+
+#5 .Create	 a	 scatter	 plot	 of	 the	 year	 and	 record	shotput	 distance	 one	 for	 #men	 and	 one	 for	women.
+```{r}
+library(ggplot2)
+mensShotput<- filter(Shotput, Event=="Mens Shotput")
+ggplot(mensShotput, aes(x = Year, y = Record))+ geom_point() + labs(title="Mens Shotput")
+
+womensShotput<- filter(Shotput, Event=="Womens Shotput")
+ggplot(womensShotput, aes(x = Year, y = Record))+ geom_point() + labs(title="Womens Shotput")
+```
+
+
+#6. Find	 the	 average/mean	 	 time	 for	 each	 event.	
+```{r}
+X<- filter(WorldRecords, Type=="time")
+Y<- group_by(X, Event)
+summarise(Y, AvgTime=mean(Record))
+```
+
+#How	 many	 athletes	 have	 time	 more	 than	average	in	each	event.
+```{r}
+Z<- mutate(Y, AvgTime=mean(Record))
+W<- filter(Z, Record > AvgTime)
+summarise(W, Athletes=n())
+```
+
+#7. Select	the	athlete	who	took	most	time	in	men’s	s100m		and	women’s	event.
+#If you ask who took the longest time, The answer should be
+```{r}
+A<- filter(WorldRecords, Event=="Mens 100m")
+B<- filter(A, Record==max(Record))
+C<-select(B, Athlete, Event, Record)
+C
+
+A<- filter(WorldRecords, Event=="Womens 100m")
+B<- filter(A, Record==max(Record))
+C<-select(B, Athlete, Event, Record)
+C
+```
+#but if you ask who have the most participations,The answer should be
+```{r}
+A<- filter(WorldRecords, Event=="Mens 100m")
+B <- group_by(A, Athlete)
+C<- summarize(B, NumberOfRecords=n())
+filter(C, NumberOfRecords == max(NumberOfRecords))
+
+A<- filter(WorldRecords, Event=="Womens 100m")
+B<- group_by(A, Athlete)
+C<- summarize(B, NumberOfRecords=n())
+filter(C, NumberOfRecords == max(NumberOfRecords))
+```
+
+#8. Which	 country	won	maximum	 times	 of	men’s	100m	event?
+```{r}
+A <- filter(WorldRecords, Event=="Mens 100m")
+B <- group_by(A, Nationality)
+C <- summarize(B, NumberOfRecords=n())
+filter(C, NumberOfRecords == max(NumberOfRecords))
+```
+
+#9. How	many	athletes	are	there	in	each	event?
+```{r}
+Y<-distinct(WorldRecords,Event, Athlete)
+aggregate(Athlete ~ Event, data = Y, FUN = length)
+```
+
+#10. Which	country	has	maximum	wins?
+```{r}
+unique(WorldRecords$Nationality)
+
+#unify some countries' name
+WorldRecords$Nationality[WorldRecords$Nationality=="?United States"] <- "United States"
+WorldRecords$Nationality[WorldRecords$Nationality=="USA"] <- "United States"
+WorldRecords$Nationality[WorldRecords$Nationality=="?East Germany"] <- "GER"
+WorldRecords$Nationality[WorldRecords$Nationality=="?West Germany"] <- "GER"
+WorldRecords$Nationality[WorldRecords$Nationality=="GDR"] <- "GER"
+WorldRecords$Nationality[WorldRecords$Nationality=="FRG"] <- "GER"
+WorldRecords$Nationality[WorldRecords$Nationality=="?Italy"] <- "ITA"
+WorldRecords$Nationality[WorldRecords$Nationality=="?New Zealand"] <- "NZL"
+WorldRecords$Nationality[WorldRecords$Nationality=="?United Kingdom"] <- "GBR"
+WorldRecords$Nationality[WorldRecords$Nationality=="?Australia"] <- "AUS"
+WorldRecords$Nationality[WorldRecords$Nationality=="?France"] <- "FRA"
+WorldRecords$Nationality[WorldRecords$Nationality=="?Sweden"] <- "SWE"
+WorldRecords$Nationality[WorldRecords$Nationality=="?Soviet Union"] <- "?Russia"
+WorldRecords$Nationality[WorldRecords$Nationality=="?Poland"] <- "POL"
+WorldRecords$Nationality[WorldRecords$Nationality=="URS"] <- "?Russia"
+
+A<- group_by(WorldRecords, Nationality)
+B <- summarize(A, NumberOfRecords=n())
+filter(B, NumberOfRecords == max(NumberOfRecords))
+```
